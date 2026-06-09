@@ -1,0 +1,147 @@
+@startuml HOSPETSE-CLASSES-MVP
+' =========================================================
+'  Diagrama de Classes — HOSPETSE MVP (UC03 + UC04)
+'  Derivado do DER. Atributos tipados em OO + métodos de negócio.
+' =========================================================
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+enum TipoConta {
+  TUTOR
+  PRESTADOR
+}
+
+enum TipoPessoa {
+  PF
+  PJ
+}
+
+enum TipoServico {
+  HOSPEDAGEM
+  PASSEIO
+  PET_SITTER
+}
+
+enum Unidade {
+  DIARIA
+  HORA
+  PASSEIO
+}
+
+enum StatusReserva {
+  PENDENTE
+  CONFIRMADA
+  CANCELADA
+  CONCLUIDA
+}
+
+enum StatusTransacao {
+  PENDENTE
+  PAGO
+  ESTORNADO
+}
+
+class Usuario {
+  - id: int
+  - email: string
+  - senhaHash: string
+  - tipoConta: TipoConta
+  - createdAt: Date
+  --
+  + autenticar(senha: string): boolean
+  + ehPrestador(): boolean
+  + ehTutor(): boolean
+}
+
+class Tutor {
+  - id: int
+  - nome: string
+  - telefone: string
+  - cpf: string
+  --
+  + adicionarPet(pet: Pet): void
+  + solicitarReserva(servico: Servico, pet: Pet, inicio: Date, fim: Date): Reserva
+  + listarReservas(): Reserva[]
+}
+
+class Pet {
+  - id: int
+  - nome: string
+  - especie: string
+  - porte: string
+}
+
+class Prestador {
+  - id: int
+  - tipoPessoa: TipoPessoa
+  - nome: string
+  - cpfCnpj: string
+  - localizacao: string
+  - avaliacao: float
+  - fotoUrl: string
+  --
+  + adicionarServico(servico: Servico): void
+  + listarServicos(): Servico[]
+}
+
+class Servico {
+  - id: int
+  - tipoServico: TipoServico
+  - nome: string
+  - preco: decimal
+  - unidade: Unidade
+  - capacidade: int
+  - ativo: boolean
+  --
+  + calcularValor(inicio: Date, fim: Date): decimal
+  + estaDisponivel(): boolean
+}
+
+class Reserva {
+  - id: int
+  - dataInicio: Date
+  - dataFim: Date
+  - status: StatusReserva
+  - valorTotal: decimal
+  - createdAt: Date
+  --
+  + confirmar(): void
+  + cancelar(): void
+  + concluir(): void
+  + calcularTotal(): decimal
+}
+
+class Transacao {
+  - id: int
+  - valor: decimal
+  - metodoPagamento: string
+  - status: StatusTransacao
+  - createdAt: Date
+  --
+  + processar(): void
+  + estornar(): void
+}
+
+' ===== Associações =====
+Usuario "1" -- "0..1" Tutor       : perfil >
+Usuario "1" -- "0..1" Prestador   : perfil >
+
+Tutor "1" -- "0..*" Pet           : possui >
+Tutor "1" -- "0..*" Reserva       : faz >
+Pet   "1" -- "0..*" Reserva       : é levado em >
+
+Prestador "1" -- "0..*" Servico   : oferece >
+Servico   "1" -- "0..*" Reserva   : é contratado em >
+
+Reserva "1" -- "0..*" Transacao   : gera >
+
+' ===== Dependências de enums =====
+Usuario ..> TipoConta
+Prestador ..> TipoPessoa
+Servico ..> TipoServico
+Servico ..> Unidade
+Reserva ..> StatusReserva
+Transacao ..> StatusTransacao
+
+@enduml

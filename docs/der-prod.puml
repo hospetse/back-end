@@ -1,0 +1,247 @@
+@startuml HOSPETSE-DER-PROD
+' =========================================================
+'  DER HOSPETSE — VERSÃO PRODUÇÃO (completa, com edge cases)
+'  Marketplace de serviços para pets
+'  Prestador genérico | tipo no serviço | controle de disponibilidade,
+'  avaliação, soft-delete e split de pagamento
+' =========================================================
+hide circle
+skinparam linetype ortho
+skinparam classFontStyle bold
+
+entity "usuario" as usuario {
+  * id : SERIAL <<PK>>
+  --
+  * email : VARCHAR <<UNIQUE>>
+  * senha_hash : VARCHAR
+  * status : VARCHAR
+  email_verificado : BOOLEAN
+  token_verificacao : VARCHAR
+  reset_token : VARCHAR
+  reset_token_expira : TIMESTAMP
+  provider : VARCHAR
+  provider_id : VARCHAR
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  --
+  ' status: ATIVO | SUSPENSO | BANIDO
+  ' provider: LOCAL | GOOGLE | APPLE
+}
+
+entity "tutor" as tutor {
+  * id : SERIAL <<PK>>
+  --
+  * usuario_id : INT <<FK>>
+  * nome : VARCHAR
+  telefone : VARCHAR
+  cpf : VARCHAR <<UNIQUE>>
+  data_nasc : DATE
+  endereco : VARCHAR
+  cidade : VARCHAR
+  cep : VARCHAR
+  contato_emergencia : VARCHAR
+  ativo : BOOLEAN
+}
+
+entity "pet" as pet {
+  * id : SERIAL <<PK>>
+  --
+  * tutor_id : INT <<FK>>
+  * nome : VARCHAR
+  especie : VARCHAR
+  raca : VARCHAR
+  porte : VARCHAR
+  peso_kg : DECIMAL
+  idade : INT
+  vacinado : BOOLEAN
+  castrado : BOOLEAN
+  carteira_vacina_url : VARCHAR
+  obs_medicas : TEXT
+  obs_comportamento : TEXT
+  ativo : BOOLEAN
+  --
+  ' porte: PEQUENO | MEDIO | GRANDE
+}
+
+entity "prestador" as prestador {
+  * id : SERIAL <<PK>>
+  --
+  * usuario_id : INT <<FK>>
+  * tipo_pessoa : VARCHAR
+  * nome : VARCHAR
+  cpf_cnpj : VARCHAR
+  bio : TEXT
+  localizacao : VARCHAR
+  latitude : DECIMAL
+  longitude : DECIMAL
+  avaliacao : DECIMAL
+  total_avaliacoes : INT
+  status : VARCHAR
+  foto_url : VARCHAR
+  ativo : BOOLEAN
+  --
+  ' tipo_pessoa: PF | PJ
+  ' status: PENDENTE_APROVACAO | ATIVO | SUSPENSO
+  ' avaliacao: NULL quando ainda sem notas
+}
+
+entity "hotel_detalhe" as hotel {
+  * prestador_id : INT <<PK,FK>>
+  --
+  capacidade : INT
+  aceita_porte : VARCHAR
+}
+
+entity "pet_sitter_detalhe" as sitter {
+  * prestador_id : INT <<PK,FK>>
+  --
+  atende_em_casa : BOOLEAN
+  raio_km : INT
+}
+
+entity "pet_walker_detalhe" as walker {
+  * prestador_id : INT <<PK,FK>>
+  --
+  duracao_padrao_min : INT
+}
+
+entity "servico" as servico {
+  * id : SERIAL <<PK>>
+  --
+  * prestador_id : INT <<FK>>
+  * tipo_servico : VARCHAR
+  * nome : VARCHAR
+  * preco : DECIMAL
+  * unidade : VARCHAR
+  preco_promocional : DECIMAL
+  promo_ate : DATE
+  antecedencia_min_horas : INT
+  ativo : BOOLEAN
+  --
+  ' tipo_servico: HOSPEDAGEM | PASSEIO | PET_SITTER
+  ' unidade: DIARIA | HORA | PASSEIO
+}
+
+entity "disponibilidade" as disp {
+  * id : SERIAL <<PK>>
+  --
+  * servico_id : INT <<FK>>
+  * data : DATE
+  vagas_total : INT
+  vagas_ocupadas : INT
+  --
+  ' resolve overbooking
+}
+
+entity "reserva" as reserva {
+  * id : SERIAL <<PK>>
+  --
+  * tutor_id : INT <<FK>>
+  * pet_id : INT <<FK>>
+  * servico_id : INT <<FK>>
+  * data_inicio : DATE
+  data_fim : DATE
+  * status : VARCHAR
+  valor_total : DECIMAL
+  checkin_em : TIMESTAMP
+  checkout_em : TIMESTAMP
+  cancelado_em : TIMESTAMP
+  cancelado_por : VARCHAR
+  motivo_cancelamento : TEXT
+  created_at : TIMESTAMP
+  --
+  ' status: AGUARDANDO_APROVACAO | PENDENTE |
+  '         CONFIRMADA | CANCELADA | CONCLUIDA
+  ' CHECK (data_fim >= data_inicio)
+}
+
+entity "transacao" as transacao {
+  * id : SERIAL <<PK>>
+  --
+  * reserva_id : INT <<FK>>
+  * valor : DECIMAL
+  valor_taxa_plataforma : DECIMAL
+  valor_repasse : DECIMAL
+  valor_reembolsado : DECIMAL
+  metodo_pagamento : VARCHAR
+  parcelas : INT
+  status : VARCHAR
+  gateway : VARCHAR
+  gateway_id : VARCHAR
+  chave_idempotencia : VARCHAR <<UNIQUE>>
+  created_at : TIMESTAMP
+  --
+  ' status: PENDENTE | PAGO | ESTORNADO | FALHOU
+}
+
+entity "avaliacao" as avaliacao {
+  * id : SERIAL <<PK>>
+  --
+  * reserva_id : INT <<FK,UNIQUE>>
+  * tutor_id : INT <<FK>>
+  * prestador_id : INT <<FK>>
+  * nota : INT
+  comentario : TEXT
+  created_at : TIMESTAMP
+  --
+  ' nota: 1..5
+}
+
+entity "favorito" as favorito {
+  * tutor_id : INT <<PK,FK>>
+  * prestador_id : INT <<PK,FK>>
+  --
+  created_at : TIMESTAMP
+}
+
+entity "mensagem" as mensagem {
+  * id : SERIAL <<PK>>
+  --
+  * remetente_id : INT <<FK>>
+  * destinatario_id : INT <<FK>>
+  reserva_id : INT <<FK>>
+  * conteudo : TEXT
+  lida : BOOLEAN
+  created_at : TIMESTAMP
+  --
+  ' remetente/destinatario = usuario.id
+}
+
+entity "notificacao" as notif {
+  * id : SERIAL <<PK>>
+  --
+  * usuario_id : INT <<FK>>
+  * tipo : VARCHAR
+  * titulo : VARCHAR
+  mensagem : TEXT
+  lida : BOOLEAN
+  created_at : TIMESTAMP
+}
+
+' ===== Relacionamentos =====
+usuario   ||--o| tutor      : "tem perfil"
+usuario   ||--o| prestador  : "tem perfil"
+
+tutor     ||--o{ pet        : "possui"
+tutor     ||--o{ reserva    : "faz"
+pet       ||--o{ reserva    : "é levado em"
+
+prestador ||--o| hotel      : "pode ter detalhe"
+prestador ||--o| sitter     : "pode ter detalhe"
+prestador ||--o| walker     : "pode ter detalhe"
+
+prestador ||--o{ servico    : "oferece"
+servico   ||--o{ disp       : "tem agenda"
+servico   ||--o{ reserva    : "é contratado em"
+
+reserva   ||--o{ transacao  : "gera"
+reserva   ||--o| avaliacao  : "recebe"
+
+tutor     ||--o{ favorito   : "salva"
+prestador ||--o{ favorito   : "é salvo"
+
+usuario   ||--o{ mensagem   : "envia/recebe"
+reserva   ||--o{ mensagem   : "contextualiza"
+usuario   ||--o{ notif      : "recebe"
+
+@enduml

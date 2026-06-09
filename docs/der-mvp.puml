@@ -1,0 +1,107 @@
+@startuml HOSPETSE-DER-MVP
+' =========================================================
+'  DER HOSPETSE — VERSÃO MVP (Sprint 7 — UC03 + UC04)
+'  Foco: buscar hotéis e solicitar reserva
+'  Enxuto, sem edge cases de prod
+' =========================================================
+hide circle
+skinparam linetype ortho
+skinparam classFontStyle bold
+
+entity "usuario" as usuario {
+  * id : SERIAL <<PK>>
+  --
+  * email : VARCHAR <<UNIQUE>>
+  * senha_hash : VARCHAR
+  * tipo_conta : VARCHAR
+  created_at : TIMESTAMP
+  --
+  ' tipo_conta: TUTOR | PRESTADOR
+}
+
+entity "tutor" as tutor {
+  * id : SERIAL <<PK>>
+  --
+  * usuario_id : INT <<FK>>
+  * nome : VARCHAR
+  telefone : VARCHAR
+  cpf : VARCHAR
+}
+
+entity "pet" as pet {
+  * id : SERIAL <<PK>>
+  --
+  * tutor_id : INT <<FK>>
+  * nome : VARCHAR
+  especie : VARCHAR
+  porte : VARCHAR
+}
+
+entity "prestador" as prestador {
+  * id : SERIAL <<PK>>
+  --
+  * usuario_id : INT <<FK>>
+  * tipo_pessoa : VARCHAR
+  * nome : VARCHAR
+  cpf_cnpj : VARCHAR
+  localizacao : VARCHAR
+  avaliacao : DECIMAL
+  foto_url : VARCHAR
+  --
+  ' tipo_pessoa: PF | PJ
+}
+
+entity "servico" as servico {
+  * id : SERIAL <<PK>>
+  --
+  * prestador_id : INT <<FK>>
+  * tipo_servico : VARCHAR
+  * nome : VARCHAR
+  * preco : DECIMAL
+  * unidade : VARCHAR
+  capacidade : INT
+  ativo : BOOLEAN
+  --
+  ' tipo_servico: HOSPEDAGEM | PASSEIO | PET_SITTER
+  ' unidade: DIARIA | HORA | PASSEIO
+}
+
+entity "reserva" as reserva {
+  * id : SERIAL <<PK>>
+  --
+  * tutor_id : INT <<FK>>
+  * pet_id : INT <<FK>>
+  * servico_id : INT <<FK>>
+  * data_inicio : DATE
+  data_fim : DATE
+  * status : VARCHAR
+  valor_total : DECIMAL
+  created_at : TIMESTAMP
+  --
+  ' status: PENDENTE | CONFIRMADA | CANCELADA | CONCLUIDA
+}
+
+entity "transacao" as transacao {
+  * id : SERIAL <<PK>>
+  --
+  * reserva_id : INT <<FK>>
+  * valor : DECIMAL
+  metodo_pagamento : VARCHAR
+  status : VARCHAR
+  created_at : TIMESTAMP
+}
+
+' ===== Relacionamentos =====
+usuario   ||--o| tutor      : "tem perfil"
+usuario   ||--o| prestador  : "tem perfil"
+
+tutor     ||--o{ pet        : "possui"
+tutor     ||--o{ reserva    : "faz"
+pet       ||--o{ reserva    : "é levado em"
+
+prestador ||--o{ servico    : "oferece"
+servico   ||--o{ reserva    : "é contratado em"
+
+reserva   ||--o{ transacao  : "gera"
+
+@enduml
