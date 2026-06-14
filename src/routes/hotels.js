@@ -30,6 +30,40 @@ router.get('/', hotelController.getHoteis);
 
 /**
  * @swagger
+ * /hotels/{id}/availability:
+ *   get:
+ *     summary: Retorna a disponibilidade de vagas do hotel num periodo 
+ *     description: Retorna a capacidade, vagas ja reservadas e o saldo disponivel (vagas_disponiveis).
+ *     tags: [Hoteis]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do hotel (prestador)
+ *       - in: query
+ *         name: data_inicio
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Data inicio no formato DD/MM/YYYY
+ *       - in: query
+ *         name: data_fim
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Data fim no formato DD/MM/YYYY
+ *     responses:
+ *       200:
+ *         description: Disponibilidade com sucesso
+ *       400:
+ *         description: Parametros ausentes ou incorretos
+ */
+router.get('/:id/availability', hotelController.getDisponibilidadeHotel);
+
+/**
+ * @swagger
  * /hotels/{id}:
  *   get:
  *     summary: Detalhe de um hotel

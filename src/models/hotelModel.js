@@ -38,4 +38,36 @@ async function buscarHotelPorId(id) {
   return { ...hotelRows[0], servicos };
 }
 
-module.exports = { listarHoteis, buscarHotelPorId };
+// Verifica a disponibilidade calculando (Capacidade Total - Overlaps de Reservas)
+async function verificarDisponibilidade(prestadorId, dataInicio, dataFim) {
+  const sql = `
+    SELECT 
+      s.id AS servico_id,
+      s.nome AS servico_nome,
+      s.capacidade AS capacidade_total,
+      COALESCE((
+        SELECT count(*)::int
+        FROM reserva r
+        WHERE r.servico_id = s.id
+          AND r.status != 'CANCELADO'
+          AND (r.data_inicio <= $3 AND (r.data_fim IS NULL OR r.data_fim >= $2))
+      ), 0) AS qtd_reservada
+    FROM servico s
+    WHERE s.prestador_id = $1 AND s.tipo_servico = 'HOSPEDAGEM' AND s.ativo = true;
+  `;
+  const { rows } = await db.query(sql, [prestadorId, dataInicio, dataFim]);
+  
+  // Mapeia adicionando a propriedade de "saldo" ou "disponivel" matemática
+  return rows.map(row => {
+    const disponivel = row.capacidade_total - row.qtd_reservada;
+    return {
+      servico_id: row.servico_id,
+      servico_nome: row.servico_nome,
+      capacidade_total: row.capacidade_total,
+      qtd_reservada: row.qtd_reservada,
+      vagas_disponiveis: disponivel > 0 ? disponivel : 0
+    };
+  });
+}
+
+module.exports = { listarHoteis, buscarHotelPorId, verificarDisponibilidade };
