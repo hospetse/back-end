@@ -1,8 +1,7 @@
 @startuml HOSPETSE-DER-MVP
 ' =========================================================
-'  DER HOSPETSE — VERSÃO MVP (Sprint 7 — UC03 + UC04)
-'  Foco: buscar hotéis e solicitar reserva
-'  Enxuto, sem edge cases de prod
+'  DER HOSPETSE — VERSAO MVP (Sprint 7 — UC03 + UC04)
+'  Foco: buscar hoteis e solicitar reserva
 ' =========================================================
 hide circle
 skinparam linetype ortho
@@ -15,8 +14,6 @@ entity "usuario" as usuario {
   * senha_hash : VARCHAR
   * tipo_conta : VARCHAR
   created_at : TIMESTAMP
-  --
-  ' tipo_conta: TUTOR | PRESTADOR
 }
 
 entity "tutor" as tutor {
@@ -26,6 +23,7 @@ entity "tutor" as tutor {
   * nome : VARCHAR
   telefone : VARCHAR
   cpf : VARCHAR
+  data_nasc : DATE
 }
 
 entity "pet" as pet {
@@ -34,21 +32,41 @@ entity "pet" as pet {
   * tutor_id : INT <<FK>>
   * nome : VARCHAR
   especie : VARCHAR
+  raca : VARCHAR
   porte : VARCHAR
+  idade : INT
 }
 
 entity "prestador" as prestador {
   * id : SERIAL <<PK>>
   --
   * usuario_id : INT <<FK>>
-  * tipo_pessoa : VARCHAR
+  * tipo : VARCHAR
   * nome : VARCHAR
-  cpf_cnpj : VARCHAR
   localizacao : VARCHAR
   avaliacao : DECIMAL
   foto_url : VARCHAR
+}
+
+entity "hotel_detalhe" as hotel_detalhe {
+  * prestador_id : INT <<PK,FK>>
   --
-  ' tipo_pessoa: PF | PJ
+  cnpj : VARCHAR
+  capacidade : INT
+  aceita_porte : VARCHAR
+}
+
+entity "pet_sitter_detalhe" as pet_sitter_detalhe {
+  * prestador_id : INT <<PK,FK>>
+  --
+  atende_em_casa : BOOLEAN
+  raio_km : INT
+}
+
+entity "pet_walker_detalhe" as pet_walker_detalhe {
+  * prestador_id : INT <<PK,FK>>
+  --
+  duracao_padrao_min : INT
 }
 
 entity "servico" as servico {
@@ -59,11 +77,7 @@ entity "servico" as servico {
   * nome : VARCHAR
   * preco : DECIMAL
   * unidade : VARCHAR
-  capacidade : INT
   ativo : BOOLEAN
-  --
-  ' tipo_servico: HOSPEDAGEM | PASSEIO | PET_SITTER
-  ' unidade: DIARIA | HORA | PASSEIO
 }
 
 entity "reserva" as reserva {
@@ -77,8 +91,6 @@ entity "reserva" as reserva {
   * status : VARCHAR
   valor_total : DECIMAL
   created_at : TIMESTAMP
-  --
-  ' status: PENDENTE | CONFIRMADA | CANCELADA | CONCLUIDA
 }
 
 entity "transacao" as transacao {
@@ -92,16 +104,20 @@ entity "transacao" as transacao {
 }
 
 ' ===== Relacionamentos =====
-usuario   ||--o| tutor      : "tem perfil"
-usuario   ||--o| prestador  : "tem perfil"
+usuario        ||--o| tutor             : "tem perfil"
+usuario        ||--o| prestador         : "tem perfil"
 
-tutor     ||--o{ pet        : "possui"
-tutor     ||--o{ reserva    : "faz"
-pet       ||--o{ reserva    : "é levado em"
+tutor          ||--o{ pet               : "possui"
+tutor          ||--o{ reserva           : "faz"
+pet            ||--o{ reserva           : "e hospedado em"
 
-prestador ||--o{ servico    : "oferece"
-servico   ||--o{ reserva    : "é contratado em"
+prestador      ||--o| hotel_detalhe     : "e"
+prestador      ||--o| pet_sitter_detalhe: "e"
+prestador      ||--o| pet_walker_detalhe: "e"
+prestador      ||--o{ servico           : "oferece"
 
-reserva   ||--o{ transacao  : "gera"
+servico        ||--o{ reserva           : "e contratado em"
+
+reserva        ||--o{ transacao         : "gera"
 
 @enduml

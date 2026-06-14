@@ -71,6 +71,24 @@ CREATE TABLE IF NOT EXISTS transacao (
   created_at        TIMESTAMP NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS hotel_detalhe (
+  prestador_id  INT PRIMARY KEY REFERENCES prestador(id),
+  cnpj          VARCHAR(18),
+  capacidade    INT,
+  aceita_porte  VARCHAR(20)                     -- PEQUENO | MEDIO | GRANDE | TODOS
+);
+
+CREATE TABLE IF NOT EXISTS pet_sitter_detalhe (
+  prestador_id      INT PRIMARY KEY REFERENCES prestador(id),
+  atende_em_casa    BOOLEAN NOT NULL DEFAULT false,
+  raio_km           INT
+);
+
+CREATE TABLE IF NOT EXISTS pet_walker_detalhe (
+  prestador_id        INT PRIMARY KEY REFERENCES prestador(id),
+  duracao_padrao_min  INT
+);
+
 -- Índices nas FKs da tabela quente (reserva) — acelera as buscas.
 CREATE INDEX IF NOT EXISTS idx_reserva_tutor   ON reserva(tutor_id);
 CREATE INDEX IF NOT EXISTS idx_reserva_servico ON reserva(servico_id);
