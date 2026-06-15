@@ -2,6 +2,7 @@ require('dotenv').config();
 
 var createError = require('http-errors');
 var express = require('express');
+var cors = require('cors');
 var logger = require('morgan');
 var swaggerUi = require('swagger-ui-express');
 var swaggerSpec = require('./src/docs/swagger');
@@ -9,6 +10,7 @@ var swaggerSpec = require('./src/docs/swagger');
 var app = express();
 
 // Middlewares
+app.use(cors()); // Permite conexões cross-origin (necessário para o Front-end/Mobile)
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
